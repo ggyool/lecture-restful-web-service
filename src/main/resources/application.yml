@@ -1,0 +1,11 @@
+server:
+  port: 8088
+
+logging:
+  level:
+    org.springframework: debug
+
+# 다국어 파일의 이름 messages.properties
+spring:
+  messages:
+    basename: messages
