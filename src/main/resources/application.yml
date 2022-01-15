@@ -5,7 +5,19 @@ logging:
   level:
     org.springframework: debug
 
-# 다국어 파일의 이름 messages.properties
+
 spring:
+  security:
+    user:
+      name: ggyool
+      password: password
+  # 다국어 파일의 이름 messages.properties
   messages:
     basename: messages
+
+# actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

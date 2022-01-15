@@ -1,11 +1,17 @@
 package org.ggyool.onlinelecturerestfulwebservices.controller;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.ggyool.onlinelecturerestfulwebservices.domain.User;
 import org.ggyool.onlinelecturerestfulwebservices.domain.UserNotFoundException;
 import org.ggyool.onlinelecturerestfulwebservices.service.UserDaoService;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,42 +25,67 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 public class UserController {
 
     private final UserDaoService userDaoService;
+    private final ObjectMapper objectMapper;
 
-    public UserController(UserDaoService userDaoService) {
+    public UserController(UserDaoService userDaoService, ObjectMapper objectMapper) {
         this.userDaoService = userDaoService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/users")
-    public List<User> retrieveAllUsers() {
-        return userDaoService.findAll();
+    public ResponseEntity<MappingJacksonValue> retrieveAllUsers() {
+        List<EntityModel<User>> result = new ArrayList<>();
+        List<User> users = userDaoService.findAll();
+
+        for (User user : users) {
+            EntityModel<User> entityModel = EntityModel.of(user);
+            entityModel.add(linkTo(methodOn(this.getClass()).retrieveAllUsers()).withSelfRel());
+            result.add(entityModel);
+        }
+
+        // apply filters
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate");
+        FilterProvider filterProvider = new SimpleFilterProvider().addFilter("UserInfo", filter);
+
+        CollectionModel<EntityModel<User>> collectionModel = CollectionModel.of(result, linkTo(methodOn(this.getClass()).retrieveAllUsers()).withSelfRel());
+
+        MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(collectionModel);
+        mappingJacksonValue.setFilters(filterProvider);
+
+        return ResponseEntity.ok(
+            mappingJacksonValue
+        );
     }
 
-//    @GetMapping("/users/{id}")
-//    public User retrieveUser(@PathVariable int id) {
-//        User user = userDaoService.findOne(id);
-//        if (user == null) {
-//            throw new UserNotFoundException(String.format("ID[%s] not found", id));
-//        }
-//        return user;
-//    }
-
     @GetMapping("/users/{id}")
-    public MappingJacksonValue retrieveUser(@PathVariable int id) {
+    public MappingJacksonValue retrieveUser(@PathVariable int id) throws JsonProcessingException {
         User user = userDaoService.findOne(id);
         if (user == null) {
             throw new UserNotFoundException(String.format("ID[%s] not found", id));
         }
-        // jackson 이 가지고 있음
+
+        EntityModel<User> model = EntityModel.of(user);
+        WebMvcLinkBuilder linkTo = linkTo(methodOn(this.getClass()).retrieveAllUsers());
+        model.add(linkTo.withRel("all-users"));
+
+        return applyFilter(model);
+    }
+
+    private MappingJacksonValue applyFilter(EntityModel<User> model) {
         SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate");
         FilterProvider filterProvider = new SimpleFilterProvider().addFilter("UserInfo", filter);
 
-        MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(user);
+        MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(model);
         mappingJacksonValue.setFilters(filterProvider);
         return mappingJacksonValue;
     }
@@ -89,5 +120,12 @@ public class UserController {
         if (user == null) {
             throw new UserNotFoundException(String.format("ID[%s] not found", id));
         }
+    }
+
+    public abstract class CustomMixin {
+        @JsonProperty
+        private String value;
+        @JsonProperty
+        private String filter;
     }
 }
