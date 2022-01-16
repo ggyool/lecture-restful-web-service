@@ -272,3 +272,47 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 }
 ```
+
+### * JPA (Java Persistence API)
+- 자바 ORM 기술에 대한 API 표준 명세 (인터페이스)
+
+#### Hibernate
+- JPA 구현체 중 하나
+
+#### Spring Date JPA
+- 스프링에서 JPA 를 쉽게 사용하도록 만들어 놓은 모듈 (ex. Repository)
+
+#### application.yml 에 추가
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:tempdb
+  jpa:
+    show-sql: true
+    
+h2:
+  console:
+    enabled: true
+```
+
+#### dependency 추가
+spring-boot-starter-data-jpa, h2 (v1.4.197)
+- 1.4.197 보다 높은 h2 버전에서는 데이터베이스를 미리 생성하는 것을 방지하도록 설정 되어 있다고 함
+  (https://github.com/h2database/h2database/issues/1901)
+
+#### 진행한 내용
+1. @Entity 로 테이블 생성
+2. resources 디렉토리에 data.sql 에 population 동작 추가
+3. JpaRepository 상속한 UserRepository 생성
+4. UserJpaController 에 CRUD API 구현
+5. User와 1:n 관계인 Post 엔티티 추가
+6. Post GET, POST API 추가
+
+
+### * Richardson Maturity Model
+
+LEVEL 0 - Expose soap web services in rest style
+LEVEL 1 - Expose resources with proper uri
+LEVEL 2 - LEVEL 1 + HTTP Methods
+LEVEL 3 - LEVEL 2 + HATEOAS (Data + Nxt Possible Actions)
+
