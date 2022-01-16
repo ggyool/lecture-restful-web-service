@@ -273,6 +273,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
+#### 추후에 H2-console의 인증을 열어주기 위한 코드 추가 
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.authorizeRequests()
+            .antMatchers("/h2-console/**").permitAll()
+            .antMatchers("/jpa/**").permitAll()
+            .anyRequest().authenticated(); // 허용하지 않은 API는 인증이 필요하도록
+    http.csrf().disable();
+    http.headers().frameOptions().disable();
+}
+```
+
 ### * JPA (Java Persistence API)
 - 자바 ORM 기술에 대한 API 표준 명세 (인터페이스)
 
@@ -311,8 +324,8 @@ spring-boot-starter-data-jpa, h2 (v1.4.197)
 
 ### * Richardson Maturity Model
 
-LEVEL 0 - Expose soap web services in rest style
-LEVEL 1 - Expose resources with proper uri
-LEVEL 2 - LEVEL 1 + HTTP Methods
+LEVEL 0 - Expose soap web services in rest style <br>
+LEVEL 1 - Expose resources with proper uri <br>
+LEVEL 2 - LEVEL 1 + HTTP Methods <br>
 LEVEL 3 - LEVEL 2 + HATEOAS (Data + Nxt Possible Actions)
 
